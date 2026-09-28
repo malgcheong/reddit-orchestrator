@@ -55,7 +55,28 @@ def plan_node(state):
     ]
     plan, res = gw.generate_json(
         "router", messages, DigestPlan, options={"temperature": 0.2, "num_predict": 800})
-    return {"plan": plan.model_dump(), "steps": [_step("plan", res, detail={"selected": len(plan.include)})]}
+
+    # Backstop: the small router sometimes under-selects. Keep valid, de-duped picks,
+    # then top up from the top-ranked candidates (RSS order = top of day), capped at 5.
+    ids = [p["reddit_id"] for p in posts]
+    known, seen, items = set(ids), set(), []
+    for it in plan.include:
+        if it.reddit_id in known and it.reddit_id not in seen:
+            seen.add(it.reddit_id)
+            items.append({"reddit_id": it.reddit_id, "reason": it.reason})
+    target = min(3, len(posts))
+    for pid in ids:
+        if len(items) >= target:
+            break
+        if pid not in seen:
+            seen.add(pid)
+            items.append({"reddit_id": pid, "reason": "상위 랭킹 자동 보완"})
+    items = items[:5]
+
+    plan_dict = {"title": plan.title, "angle": plan.angle, "include": items}
+    return {"plan": plan_dict,
+            "steps": [_step("plan", res, detail={"selected": len(items),
+                                                 "model_selected": len(plan.include)})]}
 
 
 def execute_node(state):

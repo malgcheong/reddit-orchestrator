@@ -11,7 +11,8 @@ class PlanItem(BaseModel):
 class DigestPlan(BaseModel):
     title: str = Field(description="Korean title for today's digest")
     angle: str = Field(description="one-line editorial angle tying the picks together")
-    include: list[PlanItem] = Field(description="3-5 selected posts, most important first")
+    include: list[PlanItem] = Field(
+        min_length=3, max_length=5, description="3-5 selected posts, most important first")
 
 
 class JudgeVerdict(BaseModel):

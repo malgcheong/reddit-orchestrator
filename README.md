@@ -70,7 +70,10 @@ means dry mode (preview prints to console), so the flow is testable without Disc
 The Spring Boot dashboard (`/orchestra`) shows run history, per-step evidence,
 and per-model success rate / latency from the same Postgres.
 
-Next: a launchd schedule for unattended daily runs.
+Fully unattended: two launchd agents (daily run + always-on approval bot) under
+`scripts/`. See [docs/scheduling.md](docs/scheduling.md) and
+[docs/discord-setup.md](docs/discord-setup.md). Enable them once a Discord webhook
+or bot is configured.
 
 ## Run it
 
