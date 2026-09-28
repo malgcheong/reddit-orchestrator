@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>/orchestra</title>
+    <style>
+        :root{--bg:#f3f5f9;--surface:#fff;--ink:#17314f;--text:#33475f;--muted:#5a6a7f;--line:#ccd6e4;--accent:#2a5db0}
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;line-height:1.6}
+        .wrap{width:min(1100px,calc(100% - 48px));margin:0 auto;padding:32px 0 64px}
+        h1{color:var(--ink);font-size:26px;letter-spacing:-.5px;margin:0 0 4px}
+        .sub{color:var(--muted);font-size:14px;margin:0 0 28px}
+        .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+        .card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+        .card .n{font-size:30px;font-weight:700;color:var(--ink);letter-spacing:-1px}
+        .card .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+        h2{color:var(--ink);font-size:16px;margin:28px 0 12px}
+        table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+        th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+        th{background:#eaf0f8;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+        tr:last-child td{border-bottom:none}
+        td.num{text-align:right;font-variant-numeric:tabular-nums}
+        a{color:var(--accent);text-decoration:none}
+        a:hover{text-decoration:underline}
+        .badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+        .b-published{background:#dcfce7;color:#166534}
+        .b-judged{background:#dbeafe;color:#1e40af}
+        .b-approved{background:#fef9c3;color:#854d0e}
+        .b-rejected{background:#fee2e2;color:#991b1b}
+        .b-running{background:#e2e8f0;color:#475569}
+        .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;min-width:70px}
+        .bar>span{display:block;height:100%;background:var(--accent)}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <h1>/orchestra</h1>
+    <p class="sub">Reddit 다이제스트 무인 파이프라인 · 실행 이력과 모델 통계</p>
+
+    <div class="cards">
+        <div class="card"><div class="n" th:text="${overview.totalRuns()}">0</div><div class="l">총 실행</div></div>
+        <div class="card"><div class="n" th:text="${overview.published()}">0</div><div class="l">발행됨</div></div>
+        <div class="card"><div class="n" th:text="${overview.rejected()}">0</div><div class="l">게이트 반려</div></div>
+        <div class="card"><div class="n" th:text="${overview.avgJudge() != null} ? ${#numbers.formatDecimal(overview.avgJudge(),1,1)} : '-'">-</div><div class="l">평균 judge 점수</div></div>
+    </div>
+
+    <h2>모델별 통계 (로컬 vs API 벤치마크 근거)</h2>
+    <table>
+        <thead><tr><th>모델</th><th>백엔드</th><th>호출</th><th>성공률</th><th>평균 지연</th><th>생성 토큰</th></tr></thead>
+        <tbody>
+        <tr th:each="m : ${modelStats}">
+            <td th:text="${m.model()}">model</td>
+            <td th:text="${m.backend()}">ollama</td>
+            <td class="num" th:text="${m.calls()}">0</td>
+            <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div class="bar"><span th:style="'width:' + ${m.okRatePct()} + '%'"></span></div>
+                    <span th:text="${m.okRatePct()} + '%'">0%</span>
+                </div>
+            </td>
+            <td class="num" th:text="${#numbers.formatInteger(m.avgMs(),1)} + ' ms'">0 ms</td>
+            <td class="num" th:text="${m.outTokens()}">0</td>
+        </tr>
+        <tr th:if="${modelStats.isEmpty()}"><td colspan="6" style="color:var(--muted)">아직 실행 데이터가 없습니다.</td></tr>
+        </tbody>
+    </table>
+
+    <h2>실행 이력</h2>
+    <table>
+        <thead><tr><th>#</th><th>다이제스트</th><th>상태</th><th>judge</th><th>총 지연</th><th>토큰</th><th>발행</th></tr></thead>
+        <tbody>
+        <tr th:each="r : ${runs}">
+            <td><a th:href="@{/run/{id}(id=${r.id()})}" th:text="${r.id()}">1</a></td>
+            <td>
+                <a th:href="@{/run/{id}(id=${r.id()})}" th:text="${r.title() != null} ? ${r.title()} : ${r.digestKey()}">title</a>
+                <div style="color:var(--muted);font-size:11px" th:text="${r.digestKey()}">key</div>
+            </td>
+            <td><span th:class="'badge b-' + ${r.status()}" th:text="${r.status()}">status</span></td>
+            <td class="num" th:text="${r.judgeScore() != null} ? ${#numbers.formatDecimal(r.judgeScore(),1,1)} : '-'">-</td>
+            <td class="num" th:text="${#numbers.formatInteger(r.totalMs(),1)} + ' ms'">0</td>
+            <td class="num" th:text="${r.outTokens()}">0</td>
+            <td><a th:if="${r.publishedUrl()}" th:href="${r.publishedUrl()}" target="_blank">링크 ↗</a><span th:unless="${r.publishedUrl()}">-</span></td>
+        </tr>
+        <tr th:if="${runs.isEmpty()}"><td colspan="7" style="color:var(--muted)">아직 실행이 없습니다.</td></tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

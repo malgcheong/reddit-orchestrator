@@ -17,8 +17,9 @@ hard parts.
 
 - **orchestrator/** (Python, LangGraph + FastAPI): the loop, the model gateway
   (Ollama + MLX), collection, gates, and the LLM judge.
-- **dashboard/** (Spring Boot, planned): the `/orchestra` run-history dashboard,
-  Discord approval webhook, and blog publish (commit/push to the Astro repo).
+- **dashboard/** (Spring Boot, Java 21): the `/orchestra` run-history dashboard
+  (run list, per-step evidence, model success-rate stats) reading the shared
+  Postgres read-only via JdbcTemplate + Thymeleaf.
 - **Shared Postgres**: run state, per-step evidence, and LangGraph checkpoints.
 
 ### Models (roles, not sizes)
@@ -59,8 +60,10 @@ serves and is already ranked "top of day". Trade-off: no score/comment counts.
 Rate limits are handled with backoff, and a failed subreddit degrades gracefully.
 Upgrade path is read-only PRAW (client_id/secret only).
 
-Next: Discord approval (stage 7), Astro publish (stage 8), the Spring Boot
-dashboard, and a launchd schedule.
+The Spring Boot dashboard (`/orchestra`) shows run history, per-step evidence,
+and per-model success rate / latency from the same Postgres.
+
+Next: Discord approval (stage 7) and a launchd schedule for unattended daily runs.
 
 ## Run it
 
@@ -74,6 +77,15 @@ uv run python -m orchestrator.run --backend mlx  # use the MLX path
 
 # speed benchmark (Ollama)
 python ../scripts/benchmark.py
+```
+
+Dashboard (needs JDK 21; Maven otherwise defaults to a newer JDK here):
+
+```bash
+cd dashboard
+JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home \
+  mvn -DskipTests package
+java -jar target/orchestra-dashboard-0.1.0.jar   # http://localhost:8095/orchestra
 ```
 
 Copy `orchestrator/.env.example` to `orchestrator/.env` and fill in Reddit,

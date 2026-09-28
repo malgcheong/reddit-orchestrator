@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'run #' + ${runId}">run</title>
+    <style>
+        :root{--bg:#f3f5f9;--surface:#fff;--ink:#17314f;--text:#33475f;--muted:#5a6a7f;--line:#ccd6e4;--accent:#2a5db0}
+        *{box-sizing:border-box}
+        body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;line-height:1.6}
+        .wrap{width:min(1000px,calc(100% - 48px));margin:0 auto;padding:32px 0 64px}
+        h1{color:var(--ink);font-size:22px;margin:0 0 20px}
+        a{color:var(--accent);text-decoration:none}
+        a:hover{text-decoration:underline}
+        table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;font-size:13px}
+        th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+        th{background:#eaf0f8;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+        tr:last-child td{border-bottom:none}
+        td.num{text-align:right;font-variant-numeric:tabular-nums}
+        .v-pass,.v-ok{color:#166534;font-weight:600}
+        .v-fail{color:#991b1b;font-weight:600}
+        .v-escalate{color:#854d0e;font-weight:600}
+    </style>
+</head>
+<body>
+<div class="wrap">
+    <p><a th:href="@{/orchestra}">← /orchestra</a></p>
+    <h1 th:text="'실행 #' + ${runId} + ' · 단계별 증거'">실행</h1>
+    <table>
+        <thead><tr><th>단계</th><th>백엔드</th><th>모델</th><th>입력</th><th>출력</th><th>지연</th><th>판정</th></tr></thead>
+        <tbody>
+        <tr th:each="s : ${steps}">
+            <td th:text="${s.stage()}">stage</td>
+            <td th:text="${s.backend()}">backend</td>
+            <td th:text="${s.model() != null} ? ${s.model()} : '-'">-</td>
+            <td class="num" th:text="${s.inputTokens() != null} ? ${s.inputTokens()} : '-'">-</td>
+            <td class="num" th:text="${s.outputTokens() != null} ? ${s.outputTokens()} : '-'">-</td>
+            <td class="num" th:text="${s.latencyMs() != null} ? (${s.latencyMs()} + ' ms') : '-'">-</td>
+            <td th:class="'v-' + ${s.verdict()}" th:text="${s.verdict()}">verdict</td>
+        </tr>
+        <tr th:if="${steps.isEmpty()}"><td colspan="7" style="color:var(--muted)">단계 기록이 없습니다.</td></tr>
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: orchestra-dashboard
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orchestrator
+    username: orchestrator
+    password: orchestrator
+  thymeleaf:
+    cache: false
+
+server:
+  port: 8095
