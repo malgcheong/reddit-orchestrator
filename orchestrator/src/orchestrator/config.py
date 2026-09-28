@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     # Blog publish target (a local clone of the Astro/Fuwari repo; push -> Pages deploy)
     blog_repo_path: str = "/Users/sukyungmac/workspace_side/malgcheong.github.io"
     blog_base_url: str = "https://malgcheong.github.io"
+    # On approval, publish writes + commits locally; push (live deploy) stays opt-in.
+    blog_auto_push: bool = False
+
+    # Discord approval (stage 7)
+    discord_webhook_url: str = ""     # send-only preview; empty -> dry mode (console)
+    discord_bot_token: str = ""       # interactive buttons; empty -> use resume CLI
+    discord_channel_id: int = 0
+    approval_timeout_hours: int = 24
 
     # Reddit
     reddit_client_id: str = ""

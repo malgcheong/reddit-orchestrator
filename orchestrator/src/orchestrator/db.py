@@ -51,8 +51,38 @@ def save_posts(run_id: int, posts: list[dict]):
         conn.commit()
 
 
-def save_steps(run_id: int, steps: list[dict]):
+def pending_approvals() -> list[dict]:
+    """Runs awaiting approval, with the data the Discord embed needs."""
     with connect() as conn, conn.cursor() as cur:
+        cur.execute(
+            "select r.id, r.digest_key, d.title, d.markdown from runs r "
+            "left join digests d on d.digest_key = r.digest_key "
+            "where r.status = 'pending_approval' order by r.id")
+        runs = [{"id": a, "digest_key": b, "title": c, "markdown": d}
+                for a, b, c, d in cur.fetchall()]
+        for run in runs:
+            cur.execute("select stage, latency_ms, output_tokens, detail "
+                        "from run_steps where run_id = %s", (run["id"],))
+            steps, judge = [], None
+            for stage, lat, out, detail in cur.fetchall():
+                steps.append({"latency_ms": lat, "output_tokens": out})
+                if stage == "judge":
+                    judge = detail
+            run["steps"], run["judge"] = steps, judge
+        return runs
+
+
+def get_run_id(digest_key: str):
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("select id from runs where digest_key=%s", (digest_key,))
+        row = cur.fetchone()
+        return row[0] if row else None
+
+
+def save_steps(run_id: int, steps: list[dict]):
+    # Replace: idempotent across the initial run and a later resume.
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("delete from run_steps where run_id=%s", (run_id,))
         for s in steps:
             cur.execute(
                 "insert into run_steps(run_id, stage, model, backend, input_tokens, "

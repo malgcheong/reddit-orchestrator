@@ -1,5 +1,8 @@
 """LangGraph nodes = the loop stages. Each node returns a step record so every run
 leaves an evidence trail (design draft section 9); the `steps` reducer concatenates."""
+from langgraph.types import interrupt
+
+from . import publish as pub
 from .collect import collect
 from .config import settings
 from .gateway import Gateway
@@ -100,4 +103,35 @@ def judge_node(state):
         "judge": v,
         "status": "judged",
         "steps": [_step("judge", res, verdict=("pass" if verdict.confidence >= 0.6 else "escalate"), detail=v)],
+    }
+
+
+def approve_node(state):
+    # Pause here (checkpointed) until a human resumes with a decision. The resume
+    # value is what interrupt() returns; delivered by the Discord bot or resume CLI.
+    decision = interrupt({
+        "digest_key": state["digest_key"],
+        "title": state["plan"].get("title"),
+        "judge": state.get("judge"),
+    })
+    approved = decision.get("approved") if isinstance(decision, dict) else bool(decision)
+    by = decision.get("by", "unknown") if isinstance(decision, dict) else "unknown"
+    return {
+        "approval": {"approved": bool(approved), "by": by},
+        "status": "approved" if approved else "rejected",
+        "steps": [_step("approve", verdict=("pass" if approved else "fail"), detail={"by": by})],
+    }
+
+
+def publish_node(state):
+    if not state.get("approval", {}).get("approved"):
+        return {}
+    day = state["digest_key"].replace("digest-", "")
+    result = pub.publish(state["digest_key"], state["plan"], state["draft"], day,
+                         push=settings.blog_auto_push)
+    return {
+        "publish": result,
+        "status": "published" if result.get("pushed") else "approved",
+        "steps": [_step("publish", verdict=("pushed" if result.get("pushed") else "committed"),
+                        detail=result)],
     }

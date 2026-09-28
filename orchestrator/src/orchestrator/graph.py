@@ -1,6 +1,7 @@
 from langgraph.graph import END, START, StateGraph
 
-from .nodes import collect_node, execute_node, gate_node, judge_node, plan_node
+from .nodes import (approve_node, collect_node, execute_node, gate_node,
+                    judge_node, plan_node, publish_node)
 from .state import OrchestratorState
 
 
@@ -13,6 +14,10 @@ def _after_gate(state) -> str:
     return "judge" if state["gate"]["passed"] else "rejected"
 
 
+def _after_approve(state) -> str:
+    return "publish" if state.get("approval", {}).get("approved") else "rejected"
+
+
 def build_graph(checkpointer=None):
     g = StateGraph(OrchestratorState)
     g.add_node("collect", collect_node)
@@ -20,12 +25,16 @@ def build_graph(checkpointer=None):
     g.add_node("execute", execute_node)
     g.add_node("gate", gate_node)
     g.add_node("judge", judge_node)
+    g.add_node("approve", approve_node)
+    g.add_node("publish", publish_node)
 
     g.add_edge(START, "collect")
     g.add_conditional_edges("collect", _after_collect, {"plan": "plan", "empty": END})
     g.add_edge("plan", "execute")
     g.add_edge("execute", "gate")
     g.add_conditional_edges("gate", _after_gate, {"judge": "judge", "rejected": END})
-    g.add_edge("judge", END)
+    g.add_edge("judge", "approve")
+    g.add_conditional_edges("approve", _after_approve, {"publish": "publish", "rejected": END})
+    g.add_edge("publish", END)
 
     return g.compile(checkpointer=checkpointer)

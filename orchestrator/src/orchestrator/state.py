@@ -10,6 +10,8 @@ class OrchestratorState(TypedDict, total=False):
     draft: str               # markdown
     gate: dict               # deterministic gate result
     judge: dict              # JudgeVerdict
+    approval: dict           # {approved, by}
+    publish: dict            # publish result (path, committed, pushed, url)
     # steps accumulate across nodes (reducer), forming the per-run evidence trail.
     steps: Annotated[list[dict[str, Any]], operator.add]
     status: str

@@ -60,10 +60,17 @@ serves and is already ranked "top of day". Trade-off: no score/comment counts.
 Rate limits are handled with backoff, and a failed subreddit degrades gracefully.
 Upgrade path is read-only PRAW (client_id/secret only).
 
+Approval (stage 7) is a real human-in-the-loop pause: the graph interrupts at the
+approve step (checkpointed to Postgres), sends a Discord preview, and only
+continues to publish when a decision arrives. Decide with the resume CLI
+(`python -m orchestrator.resume <digest_key> approve|reject`) or, with a bot token,
+the interactive Approve/Reject buttons in `discord_bot.py`. No webhook configured
+means dry mode (preview prints to console), so the flow is testable without Discord.
+
 The Spring Boot dashboard (`/orchestra`) shows run history, per-step evidence,
 and per-model success rate / latency from the same Postgres.
 
-Next: Discord approval (stage 7) and a launchd schedule for unattended daily runs.
+Next: a launchd schedule for unattended daily runs.
 
 ## Run it
 
