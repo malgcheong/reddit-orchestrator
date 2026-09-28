@@ -43,6 +43,20 @@ def _print_report(final: dict):
     print(final.get("draft", "(none)"))
 
 
+def _maybe_publish(args, digest_key, day, final, use_db):
+    if not args.publish:
+        return
+    if not final.get("gate", {}).get("passed"):
+        print("\n[publish] skipped: gate did not pass")
+        return
+    from . import publish as pub
+    result = pub.publish(digest_key, final["plan"], final["draft"], day, push=args.push)
+    print(f"\n[publish] {result}")
+    if use_db and result.get("committed"):
+        db.mark_published(digest_key, result.get("url", ""),
+                          "published" if result.get("pushed") else "approved")
+
+
 def _run(graph, digest_key, run_id, seed_posts=None):
     state = {"digest_key": digest_key, "run_id": run_id}
     if seed_posts is not None:
@@ -58,6 +72,10 @@ def main():
     ap.add_argument("--date", help="override digest date (YYYY-MM-DD)")
     ap.add_argument("--sample", action="store_true",
                     help="use built-in sample posts instead of live Reddit collection")
+    ap.add_argument("--publish", action="store_true",
+                    help="write the digest to the blog repo and commit it (stage 8)")
+    ap.add_argument("--push", action="store_true",
+                    help="with --publish, also push to main (triggers the live Pages deploy)")
     args = ap.parse_args()
 
     seed = SAMPLE_POSTS if args.sample else None
@@ -69,6 +87,7 @@ def main():
         graph = build_graph()
         final = _run(graph, digest_key, run_id=0, seed_posts=seed)
         _print_report(final)
+        _maybe_publish(args, digest_key, day, final, use_db=False)
         return
 
     from langgraph.checkpoint.postgres import PostgresSaver
@@ -88,6 +107,7 @@ def main():
     db.finish_run(run_id, status)
     _print_report(final)
     print(f"\n[db] run_id={run_id}  digest_key={digest_key}  status={status}")
+    _maybe_publish(args, digest_key, day, final, use_db=True)
 
 
 if __name__ == "__main__":

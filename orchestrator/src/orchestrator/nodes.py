@@ -46,8 +46,8 @@ def plan_node(state):
         {"role": "system", "content": (
             "You are an editor curating a daily Korean-language AI/dev news digest. Select "
             "exactly 3 to 5 of the most important, non-redundant posts (never fewer than 3 when "
-            "that many candidates exist). For each pick, put the exact id value (e.g. s01) in "
-            "reddit_id. Respond with JSON only per the schema.")},
+            "that many candidates exist). Write the title and angle in KOREAN. For each pick, put "
+            "the exact id value (e.g. s01) in reddit_id. Respond with JSON only per the schema.")},
         {"role": "user", "content": f"Today's candidates:\n{listing}\n\nPick posts and set an editorial angle."},
     ]
     plan, res = gw.generate_json(
@@ -63,10 +63,13 @@ def execute_node(state):
         f"### {p['title']}\n{p.get('body', '')}\nSource: {p.get('url', '')}" for p in chosen)
     messages = [
         {"role": "system", "content": (
-            "You write a concise daily AI/dev digest in Korean Markdown. Start with an H1 title "
-            "and a one-line intro reflecting the angle. For each item: a bold Korean headline, a "
-            "2-3 sentence Korean summary faithful to the source, then the source link on its own "
-            "line. Do not invent facts.")},
+            "You write a concise daily AI/dev digest in Korean Markdown for a Fuwari blog. "
+            "Do NOT write an H1 title (the title lives in front-matter). Begin with a TL;DR "
+            "admonition exactly in this form:\n"
+            ":::note\n**TL;DR**\n- <bullet>\n- <bullet>\n:::\n\n"
+            "Then, for each selected item, a `### ` Korean headline, a 2-3 sentence Korean "
+            "summary faithful to the source, and the source link as `[원문](URL)` on its own "
+            "line. Korean only. Do not invent facts.")},
         {"role": "user", "content": f"Title: {plan['title']}\nAngle: {plan['angle']}\n\nItems:\n{blocks}"},
     ]
     res = gw.generate("worker", messages, options={"temperature": 0.4, "num_predict": 1200})

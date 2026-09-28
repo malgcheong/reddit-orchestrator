@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Postgres
     database_url: str = "postgresql://orchestrator:orchestrator@localhost:5432/orchestrator"
 
+    # Blog publish target (a local clone of the Astro/Fuwari repo; push -> Pages deploy)
+    blog_repo_path: str = "/Users/sukyungmac/workspace_side/malgcheong.github.io"
+    blog_base_url: str = "https://malgcheong.github.io"
+
     # Reddit
     reddit_client_id: str = ""
     reddit_client_secret: str = ""

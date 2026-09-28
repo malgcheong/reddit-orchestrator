@@ -64,6 +64,13 @@ def save_steps(run_id: int, steps: list[dict]):
         conn.commit()
 
 
+def mark_published(digest_key: str, url: str, status: str):
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("update digests set status=%s, published_url=%s where digest_key=%s",
+                    (status, url, digest_key))
+        conn.commit()
+
+
 def save_digest(run_id: int, digest_key: str, plan: dict, draft: str, judge: dict, status: str):
     title = plan.get("title") if plan else None
     score = None
