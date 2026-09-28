@@ -1,5 +1,6 @@
-"""Deterministic QA gate (design draft stage 5). Code, not an LLM: link/dup/length/
-schema/banned-word checks. Any failure rejects the run before the judge is asked."""
+"""Deterministic QA gate (design draft stage 5). Code, not an LLM: plan-nonempty,
+ids-exist, no-duplicate-ids, length-range, banned-word checks. Any failure rejects
+the run before the judge is asked."""
 
 BANNED = ["lorem ipsum", "todo:", "placeholder", "as an ai language model"]
 
