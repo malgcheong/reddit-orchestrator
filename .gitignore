@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.python-version
+*.egg-info/
+
+# env / secrets
+.env
+.env.local
+*.local
+
+# data / models / logs
+data/
+models/
+*.log
+*.sqlite
+
+# Java / Spring
+dashboard/target/
+dashboard/.gradle/
+dashboard/build/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
