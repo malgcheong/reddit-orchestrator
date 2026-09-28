@@ -49,12 +49,18 @@ collect -> plan -> execute -> gate -> judge -> approve -> publish (+ evidence)
 
 ## Status
 
-Working today: stages plan / execute / gate / judge run end to end on the M4 with
-local models, structured outputs enforced, evidence and LangGraph checkpoints
+Working today: collect / plan / execute / gate / judge run end to end on the M4
+with local models, structured outputs enforced, evidence and LangGraph checkpoints
 persisted to Postgres.
 
-Next: real Reddit collection (stage 2), Discord approval (stage 7), Astro publish
-(stage 8), the Spring Boot dashboard, and a launchd schedule.
+Collection (stage 2) uses Reddit's public RSS top feed (no credentials): Reddit
+now 403s the `.json` endpoints for non-OAuth clients, but the RSS feed still
+serves and is already ranked "top of day". Trade-off: no score/comment counts.
+Rate limits are handled with backoff, and a failed subreddit degrades gracefully.
+Upgrade path is read-only PRAW (client_id/secret only).
+
+Next: Discord approval (stage 7), Astro publish (stage 8), the Spring Boot
+dashboard, and a launchd schedule.
 
 ## Run it
 

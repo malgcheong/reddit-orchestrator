@@ -19,6 +19,7 @@ def _print_report(final: dict):
     gate = final.get("gate") or {}
     judge = final.get("judge") or {}
     print("\n" + "=" * 60)
+    print(f"COLLECT: {len(final.get('posts', []))} posts")
     print(f"PLAN   : {plan.get('title')}  ({len(plan.get('include', []))} items)")
     print(f"         angle: {plan.get('angle')}")
     print(f"GATE   : {'PASS' if gate.get('passed') else 'REJECT'}")
@@ -42,8 +43,10 @@ def _print_report(final: dict):
     print(final.get("draft", "(none)"))
 
 
-def _run(graph, digest_key, run_id):
-    state = {"digest_key": digest_key, "posts": SAMPLE_POSTS, "run_id": run_id}
+def _run(graph, digest_key, run_id, seed_posts=None):
+    state = {"digest_key": digest_key, "run_id": run_id}
+    if seed_posts is not None:
+        state["posts"] = seed_posts   # skip live collection
     config = {"configurable": {"thread_id": digest_key}}
     return graph.invoke(state, config=config)
 
@@ -53,14 +56,18 @@ def main():
     ap.add_argument("--no-db", action="store_true", help="skip Postgres persistence")
     ap.add_argument("--backend", default="ollama", choices=["ollama", "mlx"])
     ap.add_argument("--date", help="override digest date (YYYY-MM-DD)")
+    ap.add_argument("--sample", action="store_true",
+                    help="use built-in sample posts instead of live Reddit collection")
     args = ap.parse_args()
+
+    seed = SAMPLE_POSTS if args.sample else None
 
     day = args.date or datetime.date.today().isoformat()
     digest_key = f"digest-{day}"
 
     if args.no_db:
         graph = build_graph()
-        final = _run(graph, digest_key, run_id=0)
+        final = _run(graph, digest_key, run_id=0, seed_posts=seed)
         _print_report(final)
         return
 
@@ -71,9 +78,10 @@ def main():
     with PostgresSaver.from_conn_string(settings.database_url) as cp:
         cp.setup()
         graph = build_graph(checkpointer=cp)
-        final = _run(graph, digest_key, run_id=run_id)
+        final = _run(graph, digest_key, run_id=run_id, seed_posts=seed)
 
     status = final.get("status", "judged")
+    db.save_posts(run_id, final.get("posts", []))
     db.save_steps(run_id, final.get("steps", []))
     db.save_digest(run_id, digest_key, final.get("plan"), final.get("draft"),
                    final.get("judge"), status)

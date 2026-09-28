@@ -1,10 +1,24 @@
 """LangGraph nodes = the loop stages. Each node returns a step record so every run
 leaves an evidence trail (design draft section 9); the `steps` reducer concatenates."""
+from .collect import collect
+from .config import settings
 from .gateway import Gateway
 from .gates import run_gates
 from .schemas import DigestPlan, JudgeVerdict
 
 gw = Gateway()
+
+
+def collect_node(state):
+    # Skip live collection if posts were seeded (e.g. --sample or a resumed run).
+    if state.get("posts"):
+        return {"steps": [_step("collect", verdict="seeded", detail={"count": len(state["posts"])})]}
+    posts = collect(settings.subreddits)
+    return {
+        "posts": posts,
+        "steps": [_step("collect", verdict=("ok" if posts else "empty"),
+                        detail={"count": len(posts), "subreddits": settings.subreddits})],
+    }
 
 
 def _step(stage, res=None, verdict="ok", detail=None):
@@ -22,15 +36,18 @@ def _step(stage, res=None, verdict="ok", detail=None):
 
 def plan_node(state):
     posts = state["posts"]
-    listing = "\n".join(
-        f"- id={p['reddit_id']} | {p['score']}pts {p['num_comments']}c | {p['title']}"
-        for p in posts
-    )
+
+    def line(p):
+        eng = f" | {p['score']}pts {p.get('num_comments', 0)}c" if p.get("score") is not None else ""
+        return f"- id={p['reddit_id']}{eng} | {p['title']}"
+
+    listing = "\n".join(line(p) for p in posts)
     messages = [
         {"role": "system", "content": (
-            "You are an editor curating a daily Korean-language AI/dev news digest. From the "
-            "candidates, select the 3-5 most important, non-redundant posts. For each pick, put "
-            "the exact id value (e.g. s01) in reddit_id. Respond with JSON only per the schema.")},
+            "You are an editor curating a daily Korean-language AI/dev news digest. Select "
+            "exactly 3 to 5 of the most important, non-redundant posts (never fewer than 3 when "
+            "that many candidates exist). For each pick, put the exact id value (e.g. s01) in "
+            "reddit_id. Respond with JSON only per the schema.")},
         {"role": "user", "content": f"Today's candidates:\n{listing}\n\nPick posts and set an editorial angle."},
     ]
     plan, res = gw.generate_json(

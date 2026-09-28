@@ -38,6 +38,19 @@ def finish_run(run_id: int, status: str):
         conn.commit()
 
 
+def save_posts(run_id: int, posts: list[dict]):
+    with connect() as conn, conn.cursor() as cur:
+        for p in posts:
+            cur.execute(
+                "insert into posts(run_id, reddit_id, subreddit, title, url, score, "
+                "num_comments, body, created_utc) values (%s,%s,%s,%s,%s,%s,%s,%s,%s) "
+                "on conflict (run_id, reddit_id) do nothing",
+                (run_id, p["reddit_id"], p["subreddit"], p["title"], p.get("url"),
+                 p.get("score"), p.get("num_comments"), p.get("body", ""),
+                 p.get("created_utc")))
+        conn.commit()
+
+
 def save_steps(run_id: int, steps: list[dict]):
     with connect() as conn, conn.cursor() as cur:
         for s in steps:

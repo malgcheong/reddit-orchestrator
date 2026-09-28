@@ -22,7 +22,8 @@ class Settings(BaseSettings):
     # Reddit
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
-    reddit_user_agent: str = "reddit-orchestrator/0.1"
+    reddit_user_agent: str = "reddit-orchestrator/0.1 by u/malgcheong"
+    subreddits: list[str] = ["LocalLLaMA", "MachineLearning"]
 
 
 settings = Settings()
