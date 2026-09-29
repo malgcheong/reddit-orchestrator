@@ -51,6 +51,15 @@ def save_posts(run_id: int, posts: list[dict]):
         conn.commit()
 
 
+def clear_checkpoints(thread_id: str):
+    """Drop LangGraph checkpoints for a thread so a new run starts clean.
+    Called after PostgresSaver.setup(), so the tables exist."""
+    with connect() as conn, conn.cursor() as cur:
+        for t in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):
+            cur.execute(f"delete from {t} where thread_id = %s", (thread_id,))  # noqa: S608
+        conn.commit()
+
+
 def pending_approvals() -> list[dict]:
     """Runs awaiting approval, with the data the Discord embed needs."""
     with connect() as conn, conn.cursor() as cur:

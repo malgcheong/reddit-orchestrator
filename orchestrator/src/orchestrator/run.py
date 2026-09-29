@@ -78,6 +78,10 @@ def main():
     with cm as cp:
         if use_db:
             cp.setup()
+            # A fresh start, not a replay: a leftover checkpoint for this
+            # digest_key (an earlier attempt, or a --sample test) would seed old
+            # posts and skip live collection. Same-day rerun = replace.
+            db.clear_checkpoints(digest_key)
         graph = build_graph(checkpointer=cp)
         state = {"digest_key": digest_key, "run_id": run_id}
         if seed is not None:
