@@ -64,11 +64,11 @@ def pending_approvals() -> list[dict]:
     """Runs awaiting approval, with the data the Discord embed needs."""
     with connect() as conn, conn.cursor() as cur:
         cur.execute(
-            "select r.id, r.digest_key, d.title, d.markdown from runs r "
+            "select r.id, r.digest_key, r.started_at, d.title, d.markdown from runs r "
             "left join digests d on d.digest_key = r.digest_key "
             "where r.status = 'pending_approval' order by r.id")
-        runs = [{"id": a, "digest_key": b, "title": c, "markdown": d}
-                for a, b, c, d in cur.fetchall()]
+        runs = [{"id": a, "digest_key": b, "started_at": str(c), "title": d, "markdown": e}
+                for a, b, c, d, e in cur.fetchall()]
         for run in runs:
             cur.execute("select stage, latency_ms, output_tokens, detail "
                         "from run_steps where run_id = %s", (run["id"],))

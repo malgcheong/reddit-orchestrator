@@ -15,7 +15,7 @@ from discord.ext import tasks
 from . import db, notify, resume
 from .config import settings
 
-_posted: set[str] = set()
+_posted: dict[str, str] = {}  # digest_key -> started_at of the run whose card was posted
 
 
 class ApprovalView(discord.ui.View):
@@ -59,9 +59,11 @@ class Bot(discord.Client):
             return
         for row in db.pending_approvals():
             key = row["digest_key"]
-            if key in _posted:
+            # Dedupe per run, not per digest_key: a same-day rerun reuses the key
+            # (started_at changes), and its fresh card must still be posted.
+            if _posted.get(key) == row["started_at"]:
                 continue
-            _posted.add(key)
+            _posted[key] = row["started_at"]
             embed_payload = notify.build_embed(key, {"title": row["title"]}, row["judge"],
                                                row["markdown"], row["steps"])
             e = embed_payload["embeds"][0]
