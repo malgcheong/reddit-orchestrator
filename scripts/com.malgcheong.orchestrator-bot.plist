@@ -4,17 +4,21 @@
 <dict>
     <key>Label</key>
     <string>com.malgcheong.orchestrator-bot</string>
+    <!-- Run the venv python directly: `uv run` hangs without spawning a child
+         under launchd, so the wrapper is bypassed here. -->
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/homebrew/bin/uv</string>
-        <string>run</string>
-        <string>--no-sync</string>
-        <string>python</string>
+        <string>/Users/sukyungmac/workspace_side/reddit-orchestrator/orchestrator/.venv/bin/python</string>
         <string>-m</string>
         <string>orchestrator.discord_bot</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/sukyungmac/Desktop/reddit-orchestrator/orchestrator</string>
+    <string>/Users/sukyungmac/workspace_side/reddit-orchestrator/orchestrator</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONUNBUFFERED</key>
+        <string>1</string>
+    </dict>
     <key>KeepAlive</key>
     <true/>
     <key>RunAtLoad</key>

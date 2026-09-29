@@ -6,7 +6,7 @@
     <string>com.malgcheong.orchestrator</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/sukyungmac/Desktop/reddit-orchestrator/scripts/daily-run.sh</string>
+        <string>/Users/sukyungmac/workspace_side/reddit-orchestrator/scripts/daily-run.sh</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
