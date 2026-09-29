@@ -27,17 +27,19 @@ def _strip_html(s: str) -> str:
 
 
 def _fetch_rss(sub: str, period: str, limit: int, retries: int = 4) -> str:
+    # Measured 2026-09: Reddit rate-limits RSS per IP to roughly one request per
+    # 45-60s; anything faster 429s. Retry delays must sit above that window.
     url = f"https://www.reddit.com/r/{sub}/top/.rss"
     headers = {"User-Agent": settings.reddit_user_agent}
     params = {"t": period, "limit": limit}
-    delay, last = 4.0, None
+    delay, last = 50.0, None
     for _ in range(retries):
         r = httpx.get(url, params=params, headers=headers, timeout=30)
         if r.status_code == 200 and r.content:
             return r.text
         last = r.status_code
         time.sleep(delay)
-        delay *= 2
+        delay *= 1.5
     raise RuntimeError(f"RSS fetch failed for r/{sub}: last status {last}")
 
 
@@ -61,7 +63,7 @@ def _parse(xml_text: str, sub: str) -> list[dict]:
     return posts
 
 
-def collect(subreddits=None, period="day", per_sub=8, pause=10.0) -> list[dict]:
+def collect(subreddits=None, period="day", per_sub=8, pause=55.0) -> list[dict]:
     subs = subreddits or settings.subreddits
     out = []
     for i, sub in enumerate(subs):

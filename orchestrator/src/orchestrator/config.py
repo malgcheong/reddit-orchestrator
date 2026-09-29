@@ -35,7 +35,16 @@ class Settings(BaseSettings):
     reddit_client_id: str = ""
     reddit_client_secret: str = ""
     reddit_user_agent: str = "reddit-orchestrator/0.1 by u/malgcheong"
-    subreddits: list[str] = ["LocalLLaMA", "MachineLearning"]
+    # Curated for two goals: spotting better AI models (open + frontier) and
+    # tracking dev trends. Reddit RSS allows roughly one request per minute per
+    # IP, so each extra subreddit adds ~1 minute to collect (fine for a batch).
+    subreddits: list[str] = [
+        "LocalLLaMA",     # open models, quants, benchmarks
+        "singularity",    # frontier model releases and comparisons
+        "ClaudeAI",       # commercial model usage reports
+        "programming",    # general dev ecosystem trends
+        "ChatGPTCoding",  # AI coding tools and agent workflows
+    ]
 
 
 settings = Settings()
