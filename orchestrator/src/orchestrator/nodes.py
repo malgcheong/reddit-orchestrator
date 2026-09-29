@@ -100,6 +100,24 @@ def execute_node(state):
     return {"draft": res.text, "steps": [_step("execute", res, detail={"chars": len(res.text)})]}
 
 
+def title_node(state):
+    # Title from the (already Korean) draft via the worker, not the router: the
+    # small router keeps emitting English titles despite the instruction.
+    messages = [
+        {"role": "system", "content": (
+            "너는 한국어 기술 블로그 편집자다. 아래 다이제스트 본문을 읽고, 오늘 글의 제목을 "
+            "한국어로 한 줄만 써라. 25자 안팎, 핵심 주제를 담되 과장·따옴표·마크다운·설명 없이 "
+            "제목 텍스트만 출력한다.")},
+        {"role": "user", "content": state.get("draft", "")[:2000]},
+    ]
+    res = gw.generate("worker", messages, options={"temperature": 0.3, "num_predict": 60})
+    title = res.text.strip().splitlines()[0].strip().strip("\"'`#·-—").strip()
+    plan = dict(state.get("plan") or {})
+    fallback = plan.get("title", "레딧 다이제스트")
+    plan["title"] = title if title else fallback
+    return {"plan": plan, "steps": [_step("title", res, detail={"title": plan["title"]})]}
+
+
 def gate_node(state):
     gate = run_gates(state.get("plan"), state.get("draft", ""), state["posts"])
     verdict = "pass" if gate["passed"] else "fail"
